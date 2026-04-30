@@ -229,32 +229,11 @@ def handle_team_inbox(args, **kwargs):
     else:
         messages = mailbox.read_unread(team_id, agent_id)
 
-    # Strip large content for display
-    summary = []
-    for msg in messages:
-        summary.append(
-            {
-                "from": msg["from_agent_id"],
-                "subject": msg.get("subject"),
-                "content_preview": (
-                    msg["content"][:200] + "..."
-                    if len(msg["content"]) > 200
-                    else msg["content"]
-                ),
-                "created_at": msg["created_at"],
-            }
-        )
-
-    if not summary:
+    if not messages:
         return json.dumps({"messages": [], "count": 0, "note": "No messages."})
 
-    return json.dumps(
-        {
-            "messages": summary,
-            "count": len(summary),
-            "full_messages": messages,  # complete content for the agent to read
-        }
-    )
+    # Include full content so the agent can act on it
+    return json.dumps({"messages": messages, "count": len(messages)})
 
 
 def handle_team_task_create(args, **kwargs):

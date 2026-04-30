@@ -2,12 +2,10 @@
 REST API routes for Hermes Squad dashboard.
 """
 
-import json
 import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/api")
 
@@ -127,7 +125,7 @@ def agent_mailbox(
     if history:
         messages = mailbox.read_all(team_id, agent_id)
     else:
-        messages = mailbox.read_unread(team_id, agent_id)
+        messages = mailbox.peek_unread(team_id, agent_id)
 
     return {
         "agent_id": agent_id,

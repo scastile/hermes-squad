@@ -10,9 +10,11 @@ import time
 import uuid
 from typing import Optional
 
+import logging
+
 from hermes_squad.db import get_db
 
-logger = __import__("logging").getLogger("hermes_squad.mailbox")
+logger = logging.getLogger("hermes_squad.mailbox")
 
 
 class TeamMailbox:
@@ -92,6 +94,26 @@ class TeamMailbox:
             messages = [dict(r) for r in rows]
 
         # Deserialize files from JSON string
+        for msg in messages:
+            if msg.get("files"):
+                try:
+                    msg["files"] = json.loads(msg["files"])
+                except (json.JSONDecodeError, TypeError):
+                    msg["files"] = None
+
+        return messages
+
+    def peek_unread(self, team_id: str, agent_id: str) -> list[dict]:
+        """Read unread messages without marking them as read (read-only query)."""
+        db = get_db()
+        rows = db.execute(
+            """SELECT * FROM team_mailbox
+               WHERE team_id = ? AND to_agent_id = ? AND read = 0
+               ORDER BY created_at ASC""",
+            (team_id, agent_id),
+        ).fetchall()
+
+        messages = [dict(r) for r in rows]
         for msg in messages:
             if msg.get("files"):
                 try:

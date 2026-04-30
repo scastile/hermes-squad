@@ -1,7 +1,7 @@
 """
 CLI commands for hermes-squad plugin.
 
-Exposes: hermes team setup | status | web | cleanup
+Exposes: hermes squad setup | status | web | cleanup
 """
 
 import argparse
@@ -12,55 +12,44 @@ from pathlib import Path
 logger = logging.getLogger("hermes_squad.cli")
 
 
-def build_parser() -> argparse.ArgumentParser:
-    """Build the argparse tree for 'hermes team' subcommands."""
-    parser = argparse.ArgumentParser(
-        prog="hermes team",
-        description="Hermes Squad — multi-agent coordination plugin",
-    )
-    sub = parser.add_subparsers(dest="subcommand", required=True)
+def setup_parser(subparser: argparse.ArgumentParser) -> None:
+    """Populate the 'hermes squad' subparser with subcommands."""
+    sub = subparser.add_subparsers(dest="subcommand", required=True)
 
-    # ── setup ──────────────────────────────────────────────────────────
-    setup_parser = sub.add_parser("setup", help="Initialize team database")
-    setup_parser.set_defaults(handler=cmd_setup)
+    # -- setup -------------------------------------------------------------
+    p = sub.add_parser("setup", help="Initialize team database")
+    p.set_defaults(handler=cmd_setup)
 
-    # ── status ─────────────────────────────────────────────────────────
-    status_parser = sub.add_parser("status", help="Show team status")
-    status_parser.add_argument(
-        "--team-id", help="Filter to specific team"
-    )
-    status_parser.set_defaults(handler=cmd_status)
+    # -- status ------------------------------------------------------------
+    p = sub.add_parser("status", help="Show team status")
+    p.add_argument("--team-id", help="Filter to specific team")
+    p.set_defaults(handler=cmd_status)
 
-    # ── web ────────────────────────────────────────────────────────────
-    web_parser = sub.add_parser("web", help="Start team dashboard web UI")
-    web_parser.add_argument(
+    # -- web ---------------------------------------------------------------
+    p = sub.add_parser("web", help="Start team dashboard web UI")
+    p.add_argument(
         "--port", type=int, default=8093, help="Port (default: 8093)"
     )
-    web_parser.add_argument(
-        "--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1)"
+    p.add_argument(
+        "--host", default="127.0.0.1",
+        help="Bind address (default: 127.0.0.1)"
     )
-    web_parser.add_argument(
+    p.add_argument(
         "--no-open", action="store_true", help="Don't open browser"
     )
-    web_parser.set_defaults(handler=cmd_web)
+    p.set_defaults(handler=cmd_web)
 
-    # ── cleanup ────────────────────────────────────────────────────────
-    cleanup_parser = sub.add_parser("cleanup", help="Remove old data")
-    cleanup_parser.add_argument(
-        "--older-than",
-        type=int,
-        default=7,
-        help="Remove data older than N days (default: 7)",
+    # -- cleanup -----------------------------------------------------------
+    p = sub.add_parser("cleanup", help="Remove old data")
+    p.add_argument(
+        "--older-than", type=int, default=7,
+        help="Remove data older than N days (default: 7)"
     )
-    cleanup_parser.add_argument(
-        "--team-id", help="Delete a specific team entirely"
-    )
-    cleanup_parser.set_defaults(handler=cmd_cleanup)
-
-    return parser
+    p.add_argument("--team-id", help="Delete a specific team entirely")
+    p.set_defaults(handler=cmd_cleanup)
 
 
-# ── command handlers ───────────────────────────────────────────────────────
+# -- command handlers -------------------------------------------------------
 
 
 def cmd_setup(args):
@@ -74,12 +63,12 @@ def cmd_setup(args):
     uploads_dir = db_path.parent / "uploads"
     uploads_dir.mkdir(exist_ok=True)
 
-    print("✓ Database initialized at", db_path)
-    print("✓ 5 team tools registered (team_send, team_inbox, team_task_*)")
-    print("✓ Upload directory:", uploads_dir)
+    print("\u2713 Database initialized at", db_path)
+    print("\u2713 5 team tools registered (team_send, team_inbox, team_task_*)")
+    print("\u2713 Upload directory:", uploads_dir)
     print()
     print("Ready! Use team tools in any Hermes session.")
-    print("Start dashboard: hermes team web")
+    print("Start dashboard: hermes squad web")
 
 
 def cmd_status(args):
@@ -96,13 +85,19 @@ def cmd_status(args):
         _show_team_status(team_id, task_service, mailbox)
     else:
         # Show summary of all teams
-        db = __import__("hermes_squad.db", fromlist=["get_db"]).get_db()
+        from hermes_squad.db import get_db
+
+        db = get_db()
         teams = db.execute(
-            "SELECT DISTINCT team_id FROM team_tasks UNION SELECT DISTINCT team_id FROM team_mailbox"
+            "SELECT DISTINCT team_id FROM team_tasks "
+            "UNION SELECT DISTINCT team_id FROM team_mailbox"
         ).fetchall()
 
         if not teams:
-            print("No teams found. Create one by dispatching tasks with team coordination.")
+            print(
+                "No teams found. Create one by dispatching tasks "
+                "with team coordination."
+            )
             return
 
         for row in teams:
@@ -128,12 +123,15 @@ def _show_team_status(team_id, task_service, mailbox):
         f"{statuses['completed']} completed, "
         f"{statuses['failed']} failed"
     )
-    print(f"  Members: {len(members)} ({', '.join(members) if members else 'none'})")
+    print(
+        f"  Members: {len(members)} "
+        f"({', '.join(members) if members else 'none'})"
+    )
 
     for member in members:
         unread = mailbox.unread_count(team_id, member)
         if unread:
-            print(f"  📬 {member}: {unread} unread")
+            print(f"  \U0001f4ec {member}: {unread} unread")
 
 
 def cmd_web(args):
@@ -146,8 +144,11 @@ def cmd_web(args):
     if args.host == "0.0.0.0":
         url = f"http://localhost:{args.port}"
 
-    print(f"✓ Team dashboard: {url}")
-    print(f"✓ Image uploads: ~/.hermes/plugins/hermes-squad/uploads/")
+    print(f"\u2713 Team dashboard: {url}")
+    print(
+        "\u2713 Image uploads: "
+        "~/.hermes/plugins/hermes-squad/uploads/"
+    )
     print()
 
     if not args.no_open:
@@ -170,8 +171,11 @@ def cmd_cleanup(args):
     if args.team_id:
         mailbox.delete_team(args.team_id)
         task_service.delete_team(args.team_id)
-        print(f"✓ Team '{args.team_id}' deleted.")
+        print(f"\u2713 Team '{args.team_id}' deleted.")
     else:
         deleted = mailbox.delete_old(older_than_days=args.older_than)
-        print(f"✓ Deleted {deleted} messages older than {args.older_than} days.")
-        print("  (Tasks are preserved — use --team-id to delete a full team.)")
+        print(
+            f"\u2713 Deleted {deleted} messages older than "
+            f"{args.older_than} days."
+        )
+        print("  (Tasks are preserved \u2014 use --team-id to delete a full team.)")

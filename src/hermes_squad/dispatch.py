@@ -32,12 +32,17 @@ class WaveDispatcher:
         self.tasks = tasks
         self.team_id = team_id
         self.workspace = workspace
+        self._wave_counter = 0
 
     # ── public API ──────────────────────────────────────────────────────
 
-    def run(self, parent_agent) -> dict:
+    def run(self, parent_agent=None) -> dict:
         """
         Execute all tasks in dependency order.
+
+        Args:
+            parent_agent: Hermes AIAgent instance with delegate_task().
+                          Pass None for stub/testing mode.
 
         Returns:
             {
@@ -85,10 +90,17 @@ class WaveDispatcher:
             wave_results = self._execute_wave(wave, task_service, parent_agent)
             waves.append(wave_results)
 
-            # Mark completed and unblock dependents
+            # Mark tasks based on their result status and unblock dependents
+            result_map = {}
+            for r in wave_results.get("results", []):
+                result_map[r.get("task_id")] = r.get("status", "completed")
+
             for task in wave:
-                task_service.update(task["id"], status="completed")
-                task_service.check_unblocks(task["id"])
+                short_id = task["id"][:8]
+                status = result_map.get(short_id, "completed")
+                task_service.update(task["id"], status=status)
+                if status == "completed":
+                    task_service.check_unblocks(task["id"])
                 remaining.discard(task["id"])
 
         return {
@@ -142,25 +154,19 @@ class WaveDispatcher:
         self, wave: list[dict], task_service, parent_agent
     ) -> dict:
         """
-        Execute a wave of tasks. In production this would spawn subagents
-        via Hermes's delegate_task. For now, provides the structured context
-        that subagents would receive.
+        Execute a wave of tasks in parallel via Hermes's delegate_task.
+        Falls back to context-only stub mode when parent_agent is unavailable
+        (e.g. running standalone or in tests).
         """
-        wave_num = 1  # computed from progress
+        self._wave_counter += 1
+        wave_num = self._wave_counter
         results = []
+        live_mode = parent_agent is not None and hasattr(parent_agent, "delegate_task")
 
-        for task in wave:
-            context = self._build_subagent_context(task)
-            result = {
-                "task_id": task["id"][:8],
-                "subject": task["subject"],
-                "context": context,
-                "workspace": self.workspace,
-                "team_id": self.team_id,
-                "toolset": ["team_send", "team_inbox", "team_task_create",
-                            "team_task_update", "team_task_list"],
-            }
-            results.append(result)
+        if live_mode:
+            results = self._execute_wave_live(wave, wave_num, parent_agent)
+        else:
+            results = self._execute_wave_stub(wave, wave_num)
 
         return {
             "wave": wave_num,
@@ -168,6 +174,62 @@ class WaveDispatcher:
             "tasks": [t["id"][:8] for t in wave],
             "results": results,
         }
+
+    def _execute_wave_live(
+        self, wave: list[dict], wave_num: int, parent_agent
+    ) -> list[dict]:
+        """Spawn subagents via Hermes delegate_task."""
+        delegate_tasks = []
+        for task in wave:
+            context = self._build_subagent_context(task)
+            delegate_tasks.append({
+                "goal": task.get("goal", task.get("subject", f"Complete task {task['id'][:8]}")),
+                "context": context,
+                "toolsets": ["terminal", "file", "web"],
+            })
+
+        try:
+            delegate_results = parent_agent.delegate_task(
+                tasks=delegate_tasks,
+            )
+        except Exception as e:
+            logger.error("Wave %d delegate_task failed: %s", wave_num, e)
+            delegate_results = [{"error": str(e), "task_id": t["id"][:8]} for t in wave]
+
+        results = []
+        for task, result in zip(wave, delegate_results):
+            is_error = isinstance(result, dict) and "error" in result
+            results.append({
+                "task_id": task["id"][:8],
+                "subject": task["subject"],
+                "result": result if isinstance(result, dict) else {"summary": str(result)},
+                "status": "failed" if is_error else "completed",
+            })
+
+        return results
+
+    def _execute_wave_stub(
+        self, wave: list[dict], wave_num: int
+    ) -> list[dict]:
+        """Return structured context for testing/standalone mode."""
+        logger.info("Wave %d: no parent_agent — stub mode (context only)", wave_num)
+        results = []
+        for task in wave:
+            context = self._build_subagent_context(task)
+            results.append({
+                "task_id": task["id"][:8],
+                "subject": task["subject"],
+                "context": context,
+                "workspace": self.workspace,
+                "team_id": self.team_id,
+                "toolset": [
+                    "team_send", "team_inbox", "team_task_create",
+                    "team_task_update", "team_task_list",
+                ],
+                "note": "stub mode — parent_agent not available",
+            })
+
+        return results
 
     def _build_subagent_context(self, task: dict) -> str:
         """Build the context string injected into subagent prompts."""

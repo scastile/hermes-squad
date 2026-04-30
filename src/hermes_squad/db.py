@@ -9,7 +9,9 @@ import sqlite3
 import threading
 from pathlib import Path
 
-logger = __import__("logging").getLogger("hermes_squad.db")
+import logging
+
+logger = logging.getLogger("hermes_squad.db")
 
 # Singleton
 _db: sqlite3.Connection | None = None

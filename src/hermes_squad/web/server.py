@@ -40,18 +40,10 @@ def create_app() -> FastAPI:
     uploads_dir.mkdir(exist_ok=True)
     app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
-    # SPA catch-all — serve index.html for any non-API route
+    # SPA catch-all — serve index.html for any non-API route.
+    # The empty default lets "/" match here too, so no separate root() needed.
     @app.get("/{path:path}")
-    async def spa(path: str):
-        index_path = STATIC_DIR / "index.html"
-        if index_path.exists():
-            from fastapi.responses import FileResponse
-
-            return FileResponse(str(index_path))
-        return {"message": "Hermes Squad API", "docs": "/docs"}
-
-    @app.get("/")
-    async def root():
+    async def spa(path: str = ""):
         index_path = STATIC_DIR / "index.html"
         if index_path.exists():
             from fastapi.responses import FileResponse
@@ -62,8 +54,11 @@ def create_app() -> FastAPI:
     return app
 
 
+# Module-level app for uvicorn (uvicorn hermes_squad.web.server:app)
+app = create_app()
+
+
 def start(port: int = 8093, host: str = "127.0.0.1"):
     """Start the web server."""
-    app = create_app()
     logger.info("Starting Hermes Squad dashboard on %s:%d", host, port)
     uvicorn.run(app, host=host, port=port, log_level="info")

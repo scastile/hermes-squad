@@ -37,7 +37,12 @@ class Plugin:
     # ── CLI ───────────────────────────────────────────────────────────────
 
     def _register_cli(self):
-        from hermes_squad.cli import build_parser
+        from hermes_squad.cli import setup_parser
 
-        self.ctx.register_cli_command("team", build_parser())
-        logger.debug("hermes-squad: registered CLI 'hermes team'")
+        self.ctx.register_cli_command(
+            name="squad",
+            help="Team coordination (setup, status, web, cleanup)",
+            setup_fn=setup_parser,
+            description="Hermes Squad — multi-agent coordination plugin",
+        )
+        logger.debug("hermes-squad: registered CLI 'hermes squad'")

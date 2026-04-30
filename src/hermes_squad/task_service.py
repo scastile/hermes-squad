@@ -11,9 +11,11 @@ import time
 import uuid
 from typing import Optional
 
+import logging
+
 from hermes_squad.db import get_db
 
-logger = __import__("logging").getLogger("hermes_squad.task_service")
+logger = logging.getLogger("hermes_squad.task_service")
 
 VALID_STATUSES = {"pending", "in_progress", "completed", "failed"}
 
