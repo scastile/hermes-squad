@@ -2,7 +2,7 @@
 
 Team coordination plugin for [Hermes Agent](https://github.com/NousResearch/hermes-agent) — async mailbox, shared task board, wave-based subagent dispatch, and a web dashboard with image upload.
 
-Inspired by AionUi's Team Mode architecture, built as a native Hermes plugin.
+Built as a native Hermes plugin.
 
 ## Install
 
