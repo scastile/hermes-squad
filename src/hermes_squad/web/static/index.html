@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hermes Team</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1>Hermes Team</h1>
+            <span class="version">v0.1.0</span>
+        </div>
+        <div class="header-right">
+            <button id="theme-toggle" class="icon-btn" title="Toggle theme">
+                <span class="icon">🌙</span>
+            </button>
+            <span class="status-indicator" id="status-indicator">
+                <span class="dot"></span>
+                <span id="status-text">Connected</span>
+            </span>
+        </div>
+    </header>
+
+    <main>
+        <!-- Upload Zone -->
+        <section class="upload-section" id="upload-section">
+            <div class="upload-card" id="drop-zone">
+                <div class="drop-icon">📤</div>
+                <p class="drop-title">Drop images here</p>
+                <p class="drop-hint">or click to browse. Paste path into Hermes chat.</p>
+                <input type="file" id="file-input" accept="image/*" hidden multiple>
+            </div>
+            <div class="upload-results" id="upload-results"></div>
+        </section>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Task Board -->
+            <section class="panel task-panel">
+                <div class="panel-header">
+                    <h2>Task Board</h2>
+                    <select id="team-selector" class="team-select">
+                        <option value="">Select team...</option>
+                    </select>
+                </div>
+                <div class="task-columns" id="task-board">
+                    <div class="column" data-status="pending">
+                        <div class="column-header pending">
+                            <h3>Pending</h3>
+                            <span class="count" id="count-pending">0</span>
+                        </div>
+                        <div class="task-list" id="list-pending"></div>
+                    </div>
+                    <div class="column" data-status="in_progress">
+                        <div class="column-header in-progress">
+                            <h3>In Progress</h3>
+                            <span class="count" id="count-in_progress">0</span>
+                        </div>
+                        <div class="task-list" id="list-in_progress"></div>
+                    </div>
+                    <div class="column" data-status="completed">
+                        <div class="column-header completed">
+                            <h3>Completed</h3>
+                            <span class="count" id="count-completed">0</span>
+                        </div>
+                        <div class="task-list" id="list-completed"></div>
+                    </div>
+                    <div class="column" data-status="failed">
+                        <div class="column-header failed">
+                            <h3>Failed</h3>
+                            <span class="count" id="count-failed">0</span>
+                        </div>
+                        <div class="task-list" id="list-failed"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mailbox -->
+            <aside class="panel mailbox-panel">
+                <div class="panel-header">
+                    <h2>Mailbox</h2>
+                </div>
+                <div class="mailbox-controls">
+                    <select id="agent-selector" class="agent-select">
+                        <option value="">Select agent...</option>
+                    </select>
+                </div>
+                <div class="message-list" id="message-list">
+                    <div class="empty-state">
+                        <p>Select a team and agent to view messages</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Toast container -->
+        <div id="toast-container"></div>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

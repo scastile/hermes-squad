@@ -1,0 +1,29 @@
+[project]
+name = "hermes-squad"
+version = "0.1.0"
+description = "Team coordination plugin for Hermes Agent — async mailbox, shared task board, wave-based subagent dispatch, and web dashboard with image upload"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn>=0.25.0",
+    "python-multipart>=0.0.6",
+]
+
+[project.entry-points."hermes_plugins"]
+hermes-squad = "hermes_squad:register"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
