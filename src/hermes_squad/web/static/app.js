@@ -3,7 +3,6 @@
  *
  * Handles:
  *  - Theme toggle (dark/light)
- *  - Image upload with drag-and-drop
  *  - Team/task fetching and kanban rendering
  *  - Mailbox message viewing
  *  - Auto-polling for live updates
@@ -21,7 +20,6 @@ let pollTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     setupThemeToggle();
-    setupUpload();
     setupTeamSelector();
     setupAgentSelector();
     loadTeams();
@@ -48,93 +46,6 @@ function setupThemeToggle() {
         document.documentElement.setAttribute('data-theme', saved);
         icon.textContent = saved === 'dark' ? '🌙' : '☀️';
     }
-}
-
-// ── Upload ─────────────────────────────────────────────────────────────────
-
-function setupUpload() {
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-
-    // Click to browse
-    dropZone.addEventListener('click', () => fileInput.click());
-
-    // File selected
-    fileInput.addEventListener('change', () => {
-        for (const file of fileInput.files) {
-            uploadFile(file);
-        }
-        fileInput.value = '';
-    });
-
-    // Drag and drop
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('drag-over');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('drag-over');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        for (const file of e.dataTransfer.files) {
-            if (file.type.startsWith('image/')) {
-                uploadFile(file);
-            }
-        }
-    });
-
-    // Paste from clipboard
-    document.addEventListener('paste', (e) => {
-        for (const item of e.clipboardData.items) {
-            if (item.type.startsWith('image/')) {
-                const file = item.getAsFile();
-                uploadFile(file);
-            }
-        }
-    });
-}
-
-async function uploadFile(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        if (!res.ok) throw new Error(await res.text());
-
-        const data = await res.json();
-        showUploadResult(data);
-        toast(`Uploaded: ${data.filename}`, 'success');
-    } catch (err) {
-        toast(`Upload failed: ${err.message}`, 'error');
-    }
-}
-
-function showUploadResult(data) {
-    const container = document.getElementById('upload-results');
-
-    const div = document.createElement('div');
-    div.className = 'upload-result-item';
-    div.innerHTML = `
-        <img src="${data.url}" style="max-width:100%;max-height:100px;border-radius:6px;margin-bottom:6px" alt="preview">
-        <div class="path" title="Click to copy">${data.hermes_ref}</div>
-        <button class="copy-btn" onclick="copyToClipboard('${data.hermes_ref.replace(/'/g, "\\'")}')">Copy MEDIA ref</button>
-    `;
-
-    container.prepend(div);
-
-    // Auto-cleanup after 30 seconds
-    setTimeout(() => div.remove(), 30000);
-}
-
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        toast('Copied! Paste into Hermes chat.', 'success');
-    });
 }
 
 // ── Teams ──────────────────────────────────────────────────────────────────

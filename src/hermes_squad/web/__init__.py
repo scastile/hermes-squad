@@ -1,1 +1,1 @@
-"""Web dashboard for Hermes Team plugin."""
+"""Web dashboard for Hermes Squad plugin."""

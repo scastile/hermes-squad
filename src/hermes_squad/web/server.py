@@ -1,7 +1,7 @@
 """
 FastAPI server for Hermes Squad web dashboard.
 
-Serves the SPA dashboard, REST API, and image upload endpoint.
+Serves the SPA dashboard and REST API.
 """
 
 import logging

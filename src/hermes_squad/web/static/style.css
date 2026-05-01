@@ -1,4 +1,4 @@
-/* Hermes Team Dashboard — Apple-inspired design system */
+/* Hermes Squad Dashboard — Apple-inspired design system */
 
 :root {
     /* Dark theme (default) */
@@ -136,79 +136,6 @@ main {
     padding: 20px 24px;
     max-width: 1400px;
     margin: 0 auto;
-}
-
-/* Upload Section */
-.upload-section {
-    margin-bottom: 20px;
-}
-
-.upload-card {
-    background: var(--bg-secondary);
-    border: 2px dashed var(--border);
-    border-radius: var(--radius);
-    padding: 32px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-}
-
-.upload-card:hover,
-.upload-card.drag-over {
-    border-color: var(--accent);
-    background: var(--bg-card);
-}
-
-.drop-icon {
-    font-size: 32px;
-    margin-bottom: 8px;
-}
-
-.drop-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.drop-hint {
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-.upload-results {
-    display: flex;
-    gap: 12px;
-    margin-top: 12px;
-    flex-wrap: wrap;
-}
-
-.upload-result-item {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    font-size: 13px;
-    min-width: 200px;
-}
-
-.upload-result-item .path {
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    color: var(--accent);
-    word-break: break-all;
-    cursor: pointer;
-    user-select: all;
-}
-
-.upload-result-item .copy-btn {
-    margin-top: 6px;
-    font-size: 12px;
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 4px 10px;
-    cursor: pointer;
 }
 
 /* Dashboard grid */
