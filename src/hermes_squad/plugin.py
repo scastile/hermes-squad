@@ -31,7 +31,7 @@ class Plugin:
         from hermes_squad.tools import TOOLS
 
         for name, (schema, handler) in TOOLS.items():
-            self.ctx.register_tool(name, schema, handler)
+            self.ctx.register_tool(name, "team", schema, handler)
             logger.debug(f"hermes-squad: registered tool '{name}'")
 
     # ── CLI ───────────────────────────────────────────────────────────────

@@ -117,14 +117,20 @@ def agent_mailbox(
     team_id: str = Query(...),
     history: bool = Query(False),
 ):
-    """Read messages for an agent."""
+    """Read messages for an agent. Consumes unread messages (marks them read)
+    so they don't appear as unread on subsequent fetches."""
     from hermes_squad.mailbox import get_mailbox
 
     mailbox = get_mailbox()
 
     if history:
+        # Consume any unread messages first, then return full history.
+        # This ensures messages are only "unread" once — the first time
+        # they appear in a poll cycle.
+        mailbox.read_unread(team_id, agent_id)
         messages = mailbox.read_all(team_id, agent_id)
     else:
+        # Non-destructive peek — doesn't consume, for the status endpoint.
         messages = mailbox.peek_unread(team_id, agent_id)
 
     return {
@@ -133,6 +139,28 @@ def agent_mailbox(
         "messages": messages,
         "count": len(messages),
     }
+
+
+@router.post("/mailbox/{agent_id}")
+def write_to_agent(
+    agent_id: str,
+    team_id: str = Query(...),
+    from_agent_id: str = Query(...),
+    subject: str = Query(default=""),
+    content: str = Query(...),
+):
+    """Write a message to an agent's mailbox. Enables agent-to-agent comms."""
+    from hermes_squad.mailbox import get_mailbox
+
+    mailbox = get_mailbox()
+    msg = mailbox.write(
+        team_id=team_id,
+        to_agent_id=agent_id,
+        from_agent_id=from_agent_id,
+        subject=subject or None,
+        content=content,
+    )
+    return {"status": "sent", "message": msg}
 
 
 # ── upload ─────────────────────────────────────────────────────────────────

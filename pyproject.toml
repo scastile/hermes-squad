@@ -9,7 +9,7 @@ dependencies = [
     "python-multipart>=0.0.6",
 ]
 
-[project.entry-points."hermes_plugins"]
+[project.entry-points."hermes_agent.plugins"]
 hermes-squad = "hermes_squad:register"
 
 [project.optional-dependencies]

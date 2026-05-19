@@ -4,7 +4,7 @@
  * Handles:
  *  - Theme toggle (dark/light)
  *  - Team/task fetching and kanban rendering
- *  - Mailbox message viewing
+ *  - Four mailbox windows for all agents simultaneously
  *  - Auto-polling for live updates
  */
 
@@ -13,7 +13,6 @@ const POLL_INTERVAL = 5000; // 5 seconds
 // ── State ──────────────────────────────────────────────────────────────────
 
 let currentTeamId = null;
-let currentAgentId = null;
 let pollTimer = null;
 
 // ── Init ───────────────────────────────────────────────────────────────────
@@ -21,7 +20,6 @@ let pollTimer = null;
 document.addEventListener('DOMContentLoaded', () => {
     setupThemeToggle();
     setupTeamSelector();
-    setupAgentSelector();
     loadTeams();
 });
 
@@ -84,8 +82,11 @@ function setupTeamSelector() {
         currentTeamId = selector.value || null;
         if (currentTeamId) {
             loadTasks();
-            loadAgents();
+            loadAllMailboxes();
             startPolling();
+        } else {
+            // Reset mailbox grid to empty state
+            renderMailboxGrid([]);
         }
     });
 }
@@ -150,88 +151,103 @@ function renderTasks(tasks) {
     }
 }
 
-// ── Agents ─────────────────────────────────────────────────────────────────
+// ── Mailboxes (all agents) ─────────────────────────────────────────────────
 
-function setupAgentSelector() {
-    const selector = document.getElementById('agent-selector');
-    selector.addEventListener('change', () => {
-        currentAgentId = selector.value || null;
-        if (currentAgentId && currentTeamId) {
-            loadMailbox();
-        }
-    });
-}
-
-async function loadAgents() {
+async function loadAllMailboxes() {
     if (!currentTeamId) return;
 
     try {
-        const res = await fetch(`/api/status?team_id=${currentTeamId}`);
-        const data = await res.json();
+        // First get the members and their unread counts
+        const statusRes = await fetch(`/api/status?team_id=${currentTeamId}`);
+        const status = await statusRes.json();
+        const members = status.members || [];
+        const unreadCounts = status.unread_counts || {};
 
-        const selector = document.getElementById('agent-selector');
-        selector.innerHTML = '<option value="">Select agent...</option>';
-
-        if (data.members) {
-            for (const member of data.members) {
-                const opt = document.createElement('option');
-                opt.value = member;
-                const unread = (data.unread_counts && data.unread_counts[member]) || 0;
-                opt.textContent = unread > 0 ? `${member} (${unread})` : member;
-                selector.appendChild(opt);
-            }
+        if (members.length === 0) {
+            renderMailboxGrid([]);
+            return;
         }
 
-        // Auto-select first agent
-        if (data.members && data.members.length > 0) {
-            selector.value = data.members[0];
-            currentAgentId = data.members[0];
-            loadMailbox();
-        }
-    } catch (err) {
-        console.error('Failed to load agents:', err);
-    }
-}
-
-// ── Mailbox ────────────────────────────────────────────────────────────────
-
-async function loadMailbox() {
-    if (!currentTeamId || !currentAgentId) return;
-
-    try {
-        const res = await fetch(
-            `/api/mailbox/${currentAgentId}?team_id=${currentTeamId}&history=true`
+        // Fetch all agent mailboxes in parallel
+        const results = await Promise.all(
+            members.map(async (agentId) => {
+                try {
+                    const res = await fetch(
+                        `/api/mailbox/${agentId}?team_id=${currentTeamId}&history=true`
+                    );
+                    const data = await res.json();
+                    return {
+                        agentId,
+                        messages: data.messages || [],
+                        unread: unreadCounts[agentId] || 0,
+                    };
+                } catch (err) {
+                    console.error(`Failed to load mailbox for ${agentId}:`, err);
+                    return { agentId, messages: [], unread: 0 };
+                }
+            })
         );
-        const data = await res.json();
-        renderMailbox(data.messages || []);
+
+        renderMailboxGrid(results);
     } catch (err) {
-        console.error('Failed to load mailbox:', err);
+        console.error('Failed to load mailboxes:', err);
     }
 }
 
-function renderMailbox(messages) {
-    const container = document.getElementById('message-list');
+function renderMailboxGrid(agentMailboxes) {
+    const grid = document.getElementById('mailbox-grid');
 
-    if (messages.length === 0) {
-        container.innerHTML = '<div class="empty-state"><p>No messages</p></div>';
+    if (agentMailboxes.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state mailbox-empty">
+                <p>No agents in this team</p>
+            </div>`;
         return;
     }
 
-    container.innerHTML = messages
-        .slice()
-        .reverse()
-        .map(
-            (msg) => `
-        <div class="message-item${msg.read === 0 ? ' unread' : ''}">
-            <div class="msg-header">
-                <span class="msg-from">${escapeHtml(msg.from_agent_id)}</span>
-                <span>${new Date(msg.created_at).toLocaleTimeString()}</span>
-            </div>
-            ${msg.subject ? `<div class="msg-subject">${escapeHtml(msg.subject)}</div>` : ''}
-            <div class="msg-preview">${escapeHtml((msg.content || '').slice(0, 150))}</div>
-        </div>
-    `
-        )
+    grid.innerHTML = agentMailboxes
+        .map(({ agentId, messages, unread }) => {
+            const msgCount = messages.length;
+            const statusDot = unread > 0 ? 'pending' : 'completed';
+            const hasUnread = unread > 0;
+            const titleExtra = hasUnread ? ` (${unread} unread)` : '';
+
+            let messagesHtml;
+            if (msgCount === 0) {
+                messagesHtml = '<div class="empty-state"><p>No messages</p></div>';
+            } else {
+                messagesHtml = messages
+                    .slice()
+                    .reverse()
+                    .map(
+                        (msg) => `
+                <div class="message-item${msg.read === 0 ? ' unread' : ''}">
+                    <div class="msg-header">
+                        <span class="msg-from">${escapeHtml(msg.from_agent_id)}</span>
+                        <span>${new Date(msg.created_at).toLocaleTimeString()}</span>
+                    </div>
+                    ${msg.subject ? `<div class="msg-subject">${escapeHtml(msg.subject)}</div>` : ''}
+                    <div class="msg-preview">${escapeHtml((msg.content || '').slice(0, 150))}</div>
+                </div>
+            `
+                    )
+                    .join('');
+            }
+
+            return `
+            <div class="mailbox-window">
+                <div class="mailbox-window-header">
+                    <div class="mailbox-agent-name">
+                        <span class="dot" style="background: var(--${statusDot})"></span>
+                        ${escapeHtml(agentId)}${titleExtra}
+                    </div>
+                    <span class="mailbox-msg-count">${msgCount} msg${msgCount !== 1 ? 's' : ''}</span>
+                </div>
+                <div class="message-list">
+                    ${messagesHtml}
+                </div>
+            </div>`;
+        })
         .join('');
 }
 
@@ -242,7 +258,7 @@ function startPolling() {
     pollTimer = setInterval(() => {
         if (currentTeamId) {
             loadTasks();
-            if (currentAgentId) loadMailbox();
+            loadAllMailboxes();
         }
         loadTeams();
     }, POLL_INTERVAL);

@@ -131,24 +131,14 @@ header h1 {
     background: var(--failed);
 }
 
-/* Main layout */
+/* Main layout — vertical stacking */
 main {
     padding: 20px 24px;
     max-width: 1400px;
     margin: 0 auto;
-}
-
-/* Dashboard grid */
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 320px;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
-}
-
-@media (max-width: 900px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 /* Panels */
@@ -173,7 +163,7 @@ main {
     letter-spacing: -0.2px;
 }
 
-.team-select, .agent-select {
+.team-select {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
@@ -281,18 +271,82 @@ main {
     color: var(--pending);
 }
 
-/* Mailbox */
-.mailbox-controls {
-    padding: 10px 16px;
+/* Mailbox Grid — four windows in a row */
+.mailbox-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 1100px) {
+    .mailbox-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .mailbox-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Individual mailbox window */
+.mailbox-window {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.mailbox-window-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
     border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
 }
 
-.message-list {
+.mailbox-agent-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mailbox-agent-name .dot {
+    width: 6px;
+    height: 6px;
+}
+
+.mailbox-msg-count {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    background: var(--bg-card);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.mailbox-window .message-list {
     padding: 8px;
-    max-height: 500px;
+    flex: 1;
     overflow-y: auto;
+    max-height: 300px;
 }
 
+/* Mailbox empty state (team not selected) */
+.mailbox-empty {
+    grid-column: 1 / -1;
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+}
+
+/* Messages */
 .empty-state {
     padding: 32px 16px;
     text-align: center;
@@ -308,6 +362,10 @@ main {
     margin-bottom: 8px;
 }
 
+.message-item:last-child {
+    margin-bottom: 0;
+}
+
 .message-item.unread {
     border-left: 3px solid var(--accent);
 }
@@ -316,7 +374,7 @@ main {
     display: flex;
     justify-content: space-between;
     margin-bottom: 4px;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-secondary);
 }
 
@@ -326,13 +384,13 @@ main {
 }
 
 .message-item .msg-subject {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
 }
 
 .message-item .msg-preview {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-secondary);
     line-height: 1.4;
 }
